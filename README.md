@@ -1,7 +1,6 @@
-# magdean
-MAG differential expression analysis
+# dexmex
+<picture>
+  <img align="left" alt="dexmex Logo" src="dexmex/img/logo.png" width="160">
+</picture>
 
-# Input Data
-## coldata.tsv
-- The relevant levels _have to be_ in the first second column
-- User has to provide a string indicating which the base level is
+Python/R tool for metatranscriptome differential expression analysis. Normalizes count data individually for each taxon instead of the whole microbial community. Differential expression is performed using DESeq2.
