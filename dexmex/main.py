@@ -1,16 +1,26 @@
 #!/usr/bin/env python
 
+import os
 import argparse
+import subprocess
 
 from dexmex import feature_to_mag
 from dexmex import convert_featureCounts
 
 
 def main():
-    parser = argparse.ArgumentParser(description='dexmex: A tool to access various functionalities for processing and analyzing metagenomic data.')
+    parser = argparse.ArgumentParser(description='Calculating local (per-bin-normalized) differential expression using DESeq2.')
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+
+    # local differential expression command
+    local_diff_exp_parser = subparsers.add_parser('localdiffexp', help='Run the local_diffExp.R script')
+    local_diff_exp_parser.add_argument('--outdir', required=True, help='Path to the output directory.')
+    local_diff_exp_parser.add_argument('--coldata_path', required=True, help='Path to the coldata file.')
+    local_diff_exp_parser.add_argument('--counts_path', required=True, help='Path to the counts file.')
+    local_diff_exp_parser.add_argument('--feature_to_mag_path', required=True, help='Feature to MAG data path.')
+    local_diff_exp_parser.add_argument('--reference_level', required=True, help='Reference level for condition comparison.')
+        
     # convertfc command
     convert_fc_parser = subparsers.add_parser('convertfc', help='Access functionality of convert_featureCounts.py')
     convert_fc_parser.add_argument('-f', '--featureCountsFile', nargs='+', help='Paths to featureCounts files. You can provide multiple files, separated by spaces.', required=True)
@@ -30,16 +40,34 @@ def main():
     args = parser.parse_args()
     
     if args.command == 'convertfc':
+        print("Tryin to convert featureCounts files to a single count table...")
         convert_featureCounts.convert(args.featureCountsFile,
                                       args.output,
                                       args.samplenames)
+        print("\n\t...done!")
     elif args.command == 'featuretomag':
+        print("Starting feature to MAG mapping..")
         feature_to_mag.build(args.output,
                              args.bins_directory,
                              args.skip,
                              args.featureCounts,
                              args.gff,
                              args.gene_id)
+        print("\n\t...done!")
+    elif args.command == 'localdiffexp':
+        print("Starting local differential expression analysis...")
+        mainpy_dir = os.path.dirname(os.path.abspath(__file__))
+        rscript_path = os.path.join(mainpy_dir, 'local_diffExp.R')
+        command = [
+            'Rscript', rscript_path,
+            '--outdir', args.outdir,
+            '--coldata_path', args.coldata_path,
+            '--counts_path', args.counts_path,
+            '--feature_to_mag_path', args.feature_to_mag_path,
+            '--reference_level', args.reference_level
+        ]
+        subprocess.run(command)
+        print("\n\t...done!")
     else:
         parser.print_help()
 

@@ -144,9 +144,14 @@ def convert(fc_files: list,
 
     feature_counts_list = []
 
-    for file, newnames in zip(fc_files, sample_names):
-        file_results = parse_feature_counts(file, newnames)
-        feature_counts_list.append(file_results)
+    if sample_names:
+        for file, newnames in zip(fc_files, sample_names):
+            file_results = parse_feature_counts(file, newnames)
+            feature_counts_list.append(file_results)
+    else:
+        for file in fc_files:
+            file_results = parse_feature_counts(file, None)
+            feature_counts_list.append(file_results)
 
     merged_counts = merge_feature_counts(feature_counts_list)
     write_output(merged_counts, outfile)

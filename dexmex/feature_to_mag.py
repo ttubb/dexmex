@@ -88,6 +88,8 @@ def get_feature_to_mag_from_gff(gff_file: str,
             attribute_strings = row[gffAttributeIndex].split(gffAttributeDelimiter)
             attributes = {}
             for attribute_string in attribute_strings:
+                if '=' not in attribute_string:
+                    continue
                 key, value = attribute_string.split('=')
                 attributes[key] = value
             if feature_fieldname not in attributes:
@@ -139,7 +141,8 @@ def write_output(outfile: str,
     """
     outdir = os.path.dirname(outfile)
     if not os.path.isdir(outdir):
-        os.makedirs(outdir)
+        if not outdir == '':
+            os.makedirs(outdir)
     with open(outfile, 'w') as f:
         writer = csv.writer(f, delimiter='\t')
         for feature, mag in feature_to_mag.items():
