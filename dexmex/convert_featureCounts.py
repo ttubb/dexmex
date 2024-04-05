@@ -5,7 +5,8 @@ import argparse
 
 def check_input(featureCounts_files: list,
                 sample_names: list,
-                output_file: str):
+                output_file: str,
+                coldata_file: str = None):
     """
     Checks the input arguments for errors.
 
@@ -25,6 +26,10 @@ def check_input(featureCounts_files: list,
 
     if os.path.isfile(output_file):
         raise ValueError(f"The output file {output_file} already exists. Please provide a new output file path.")
+    
+    if coldata_file:
+        if not os.path.isfile(coldata_file):
+            raise ValueError(f"The provided coldata file {coldata_file} does not exist.")
 
 
 def parse_feature_counts(feature_counts_file: str,
@@ -107,7 +112,8 @@ def merge_feature_counts(feature_counts_list: list) -> dict:
 
 
 def write_output(merged_counts: dict,
-                 output_file: str):
+                 output_file: str,
+                 coldata_file: str = None):
     """
     Writes the merged feature counts to an output file as tsv.
 
@@ -115,13 +121,24 @@ def write_output(merged_counts: dict,
     merged_counts: The merged dictionary containing the feature counts.
     output_file: Path to the output file.
     """
+    samples = list(merged_counts.keys())
+    if coldata_file:
+        coldata_samples = []
+        with open(coldata_file, 'r') as f:
+            reader = csv.reader(f, delimiter='\t')
+            header = next(reader)
+            for row in reader:
+                coldata_samples.append(row[0].strip())
+        if set(samples) != set(coldata_samples):
+            raise ValueError("The sample names found in the coldata file do not match the sample names in the featureCounts files.")
+        samples = coldata_samples
     output_dir = os.path.dirname(output_file)
     if not os.path.exists(output_dir):
         if not output_dir == '':
             os.makedirs(output_dir)
+    print("Writing output, samples is", samples)
     with open(output_file, 'w', newline='') as f:
         writer = csv.writer(f, delimiter='\t')
-        samples = list(merged_counts.keys())
         features = list(merged_counts[samples[0]].keys())
         header = ['feature_id'] + samples
         writer.writerow(header)
@@ -132,7 +149,8 @@ def write_output(merged_counts: dict,
 
 def convert(fc_files: list,
             outfile: str,
-            sample_names: list = None):
+            sample_names: list = None,
+            coldata_file: str = None):
     """
     Converts multiple featureCounts files to a single count table.
 
@@ -140,7 +158,7 @@ def convert(fc_files: list,
     fc_files: List of paths to the featureCounts files.
     outfile: Path to the output file.
     """
-    check_input(fc_files, sample_names, outfile)
+    check_input(fc_files, sample_names, outfile, coldata_file)
 
     feature_counts_list = []
 
@@ -154,13 +172,15 @@ def convert(fc_files: list,
             feature_counts_list.append(file_results)
 
     merged_counts = merge_feature_counts(feature_counts_list)
-    write_output(merged_counts, outfile)
+
+    write_output(merged_counts, outfile, coldata_file)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Creates a count table compatible to local_diffExp.R from multiple featureCounts tables.')
     parser.add_argument('-f', '--featureCountsFile', nargs='+', help='Paths to the featureCounts files.', required=True)
     parser.add_argument('-s', '--samplenames', nargs='*', help='You can overwrite the samplenames in the featureCounts tables with these names. Provide the names in the same order as the files, separated by spaces. When providing multiple names for one file (because it has multiple count columns), separate them with a comma (no space).' )
+    parser.add_argument('-c', '--coldata', help='Path to the a coldata file as used by deseq. If provided, output columns will be in the same order as the samples in the coldata file.', required=False)
     parser.add_argument('-o', '--output', help='Path to the output file.', required=True)
 
     args = parser.parse_args()

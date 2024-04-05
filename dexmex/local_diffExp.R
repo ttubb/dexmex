@@ -26,7 +26,8 @@ default_normalization <- function(count_matrix, coldata_path, reference_level) {
     #' @param reference_level The reference level for the condition
     #' 
     #' @return A normalized count matrix
-
+    #' 
+    
     # Load column data
     coldata = read.csv(file=coldata_path, sep='\t', row.names=1)
     coldata[,1] = factor(coldata[,1], levels=unique(coldata[,1]))
@@ -188,16 +189,40 @@ run_pipeline <- function(outdir, coldata_path, counts_path, feature_to_mag_path,
   mag_counts <- list()
   # Split the counts matrix by MAG ID
   for(mag_id in levels(feature_to_mag$mag_id)) {
+    cat("Current mag_id:", mag_id, "\n")
     mag_rows <- rownames(feature_to_mag[feature_to_mag$mag_id == mag_id, , drop=FALSE])
     if(length(mag_rows) > 0 && all(mag_rows %in% rownames(counts))) {
       mag_counts[[as.character(mag_id)]] <- counts[mag_rows, ]
     }
   }
 
+
   # Normalize count matrices for each MAG ID
+  failed_mag_ids <- character()
   normalized_mag_counts <- lapply(mag_counts, function(count_matrix) {
-    default_normalization(count_matrix, coldata_path, reference_level)
+    tryCatch({
+      # Attempt normalization
+      default_normalization(count_matrix, coldata_path, reference_level)
+    }, error = function(e) {
+      # Handle errors by reporting and excluding the problematic MAG ID
+      cat("Normalization failed for MAG ID:", names(count_matrix), "- Excluding from further analysis.\n")
+      failed_mag_ids <<- c(failed_mag_ids, names(count_matrix)) # Append the failed MAG ID
+      NULL # Return NULL to exclude this MAG ID
+    })
   })
+
+  # Filter out NULL values from failed normalization attempts
+  normalized_mag_counts <- Filter(Negate(is.null), normalized_mag_counts)
+  
+  # Report issues with normalization
+  if(length(failed_mag_ids) > 0) {
+    writeLines(failed_mag_ids, file.path(outdir, "failed_mags.txt"))
+  }
+
+  ## Normalize count matrices for each MAG ID
+  #normalized_mag_counts <- lapply(mag_counts, function(count_matrix) {
+  #  default_normalization(count_matrix, coldata_path, reference_level)
+  #})
 
   # Combine all normalized count matrices into one large matrix
   combined_matrix <- do.call(rbind, normalized_mag_counts)

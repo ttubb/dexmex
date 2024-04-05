@@ -25,6 +25,7 @@ def main():
     convert_fc_parser = subparsers.add_parser('convertfc', help='Access functionality of convert_featureCounts.py')
     convert_fc_parser.add_argument('-f', '--featureCountsFile', nargs='+', help='Paths to featureCounts files. You can provide multiple files, separated by spaces.', required=True)
     convert_fc_parser.add_argument('-s', '--samplenames', nargs='*', help='You can overwrite the samplenames in the featureCounts tables with these names. Provide the names in the same order as the files, separated by spaces. When providing multiple names for one file (because it has multiple count columns), separate them with a comma (no space).' )
+    convert_fc_parser.add_argument('-c', '--coldata', help='Path to the a coldata file as used by deseq. If provided, output columns will be in the same order as the samples in the coldata file.', required=False)
     convert_fc_parser.add_argument('-o', '--output', help='Path to the output file.', required=True)
     
     # featuretomag command
@@ -43,7 +44,8 @@ def main():
         print("Tryin to convert featureCounts files to a single count table...")
         convert_featureCounts.convert(args.featureCountsFile,
                                       args.output,
-                                      args.samplenames)
+                                      args.samplenames,
+                                      args.coldata)
         print("\n\t...done!")
     elif args.command == 'featuretomag':
         print("Starting feature to MAG mapping..")

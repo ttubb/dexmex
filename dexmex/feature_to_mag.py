@@ -131,7 +131,8 @@ def get_feature_to_mag_from_featureCounts(featureCounts_file: str,
 
 
 def write_output(outfile: str,
-                 feature_to_mag: dict):
+                 feature_to_mag: dict,
+                 header=['feature_id', 'mag_id']):
     """
     Writes the feature_to_mag dictionary to a file.
 
@@ -145,6 +146,7 @@ def write_output(outfile: str,
             os.makedirs(outdir)
     with open(outfile, 'w') as f:
         writer = csv.writer(f, delimiter='\t')
+        writer.writerow(header)
         for feature, mag in feature_to_mag.items():
             writer.writerow([feature, mag])
 
