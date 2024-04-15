@@ -3,4 +3,4 @@
   <img align="right" alt="dexmex Logo" src="dexmex/img/logo.png" width="200">
 </picture>
 
-Python/R tool for metatranscriptome differential expression analysis. Normalizes count data individually for each taxon instead of the whole microbial community. Differential expression is performed using DESeq2.
+Python/R tool for metatranscriptome differential expression analysis. Normalizes count data individually for each taxon instead of the whole microbial community. Differential expression testing is performed using DESeq2.
